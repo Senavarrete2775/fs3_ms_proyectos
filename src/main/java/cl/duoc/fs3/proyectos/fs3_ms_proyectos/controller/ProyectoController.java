@@ -30,4 +30,9 @@ public class ProyectoController {
     public ResponseEntity<Proyecto> crearProyecto(@Valid @RequestBody Proyecto proyecto) {
         return new ResponseEntity<>(service.crearProyecto(proyecto), HttpStatus.CREATED);
     }
+
+    @GetMapping("/{id}/detalle")
+    public ResponseEntity<Proyecto> obtenerDetalle(@PathVariable Long id) {
+        return ResponseEntity.ok(service.obtenerDetalleProyecto(id));
+    }
 }
