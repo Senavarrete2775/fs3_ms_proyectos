@@ -1,0 +1,43 @@
+services:
+  db-proyectos:
+    image: postgres:18.3-alpine3.23
+    container_name: innovatech-db-proyectos
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: db_proyectos
+    ports:
+      - "5433:5432"
+    volumes:
+      - proyectos_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d db_proyectos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - proyectos-network
+
+  ms-proyectos-api:
+    build: .
+    container_name: innovatech-ms-proyectos
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://innovatech-db-proyectos:5432/db_proyectos
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=admin123
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_FLYWAY_ENABLED=true
+    depends_on:
+      db-proyectos:
+        condition: service_healthy
+    networks:
+      - proyectos-network
+
+networks:
+  proyectos-network:
+    driver: bridge
+
+volumes:
+  proyectos_data:
