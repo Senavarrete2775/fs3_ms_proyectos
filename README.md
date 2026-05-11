@@ -88,4 +88,4 @@ Al iniciar, el sistema ejecuta automáticamente los scripts de **Flyway** para c
 
 ---
 
-© 2026 Innovatech Solutions - Ingeniería Civil Informática - Documentación Técnica Senior (EV2)
+© 2026 Innovatech Solutions - Ingeniería Civil Informática - Documentación Técnica (EV2)
