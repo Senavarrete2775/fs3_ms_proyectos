@@ -38,4 +38,7 @@ public class Proyecto {
     @NotBlank(message = "El estado no puede estar vacío")
     @Column(nullable = false, length = 20)
     private String estado;
+
+    @Transient
+    private Integer totalHoras;
 }
