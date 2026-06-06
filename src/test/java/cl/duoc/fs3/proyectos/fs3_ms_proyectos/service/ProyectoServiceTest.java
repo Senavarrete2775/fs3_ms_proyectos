@@ -69,4 +69,46 @@ public class ProyectoServiceTest {
             proyectoService.obtenerDetalleProyecto(99L);
         });
     }
+
+    @Test
+    void testActualizarProyecto_DebeModificarYGuardar() {
+        Proyecto datosNuevos = Proyecto.builder()
+                .nombre("Nombre Modificado")
+                .estado("FINALIZADO")
+                .descripcion("Nueva descripción")
+                .build();
+
+        when(proyectoRepository.findById(1L)).thenReturn(Optional.of(proyectoPrueba));
+        when(proyectoRepository.save(any(Proyecto.class))).thenReturn(proyectoPrueba);
+
+
+        Proyecto resultado = proyectoService.actualizarProyecto(1L, datosNuevos);
+
+
+        assertNotNull(resultado);
+        assertEquals("Nombre Modificado", resultado.getNombre());
+        assertEquals("FINALIZADO", resultado.getEstado());
+        verify(proyectoRepository, times(1)).save(any(Proyecto.class));
+    }
+
+    @Test
+    void testEliminarProyecto_DebeBorrarSiExiste() {
+        when(proyectoRepository.existsById(1L)).thenReturn(true);
+        doNothing().when(proyectoRepository).deleteById(1L);
+
+        proyectoService.eliminarProyecto(1L);
+        verify(proyectoRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    void testEliminarProyecto_DebeLanzarExcepcionSiNoExiste() {
+        when(proyectoRepository.existsById(99L)).thenReturn(false);
+
+
+        assertThrows(RuntimeException.class, () -> {
+            proyectoService.eliminarProyecto(99L);
+        });
+        verify(proyectoRepository, never()).deleteById(anyLong());
+    }
+
 }

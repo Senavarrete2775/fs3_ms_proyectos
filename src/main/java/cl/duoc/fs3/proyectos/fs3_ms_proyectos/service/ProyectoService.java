@@ -44,4 +44,25 @@ public class ProyectoService {
     public Proyecto crearProyecto(Proyecto proyecto) {
         return proyectoRepository.save(proyecto);
     }
+
+    public Proyecto actualizarProyecto(Long id, Proyecto proyectoActualizado) {
+
+        Proyecto proyectoExistente = proyectoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado para actualizar"));
+
+        proyectoExistente.setNombre(proyectoActualizado.getNombre());
+        proyectoExistente.setDescripcion(proyectoActualizado.getDescripcion());
+        proyectoExistente.setEstado(proyectoActualizado.getEstado());
+        proyectoExistente.setFechaInicio(proyectoActualizado.getFechaInicio());
+
+        return proyectoRepository.save(proyectoExistente);
+    }
+
+    public void eliminarProyecto(Long id) {
+        if (!proyectoRepository.existsById(id)) {
+            throw new RuntimeException("Proyecto no encontrado para eliminar");
+        }
+
+        proyectoRepository.deleteById(id);
+    }
 }
