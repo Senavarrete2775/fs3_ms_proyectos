@@ -35,4 +35,16 @@ public class ProyectoController {
     public ResponseEntity<Proyecto> obtenerDetalle(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtenerDetalleProyecto(id));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Proyecto> actualizarProyecto(@PathVariable Long id, @RequestBody Proyecto proyecto) {
+        Proyecto proyectoActualizado = service.actualizarProyecto(id, proyecto);
+        return ResponseEntity.ok(proyectoActualizado);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProyecto(@PathVariable Long id) {
+        service.eliminarProyecto(id);
+        return ResponseEntity.noContent().build(); // Retorna un 204 No Content (el estándar para borrados exitosos)
+    }
 }
