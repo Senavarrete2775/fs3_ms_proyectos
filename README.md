@@ -1,39 +1,29 @@
 # 🚀 Innovatech Solutions - Microservicio de Gestión de Proyectos
 
-Este microservicio es el componente core encargado de la administración, planificación y seguimiento de iniciativas tecnológicas dentro de Innovatech Solutions.  
-Su función principal es gestionar el ciclo de vida de los proyectos y sus tareas asociadas, proporcionando cálculos automáticos de carga de trabajo para una toma de decisiones informada.
+Este microservicio es el componente del core encargado de la administración, planificación y seguimiento de proyectos, tareas y asignación de carga de trabajo de los empleados en Innovatech.
+
+Su responsabilidad principal es mantener el ciclo de vida de los proyectos, gestionar el catálogo de tareas por proyecto, y registrar qué empleados están asignados a qué proyectos y cuántas horas semanales dedican a cada uno.
 
 ---
 
 ## 🏗️ Arquitectura de Software
 
-El sistema implementa patrones de diseño robustos para garantizar la integridad de los datos y el desacoplamiento de componentes:
+El microservicio está diseñado bajo principios de desacoplamiento y consistencia:
 
-### Repository Pattern (Patrón Repositorio)
-Utiliza una capa de abstracción entre la lógica de negocio y la persistencia en PostgreSQL mediante **Spring Data JPA**.  
-Esto permite realizar operaciones de base de datos sin acoplamiento a SQL manual, facilitando el mantenimiento y las pruebas unitarias.
-
-### Relación de Entidades y Cómputo Dinámico
-
-- **One-To-Many / Many-To-One:**  
-  Implementa una relación estricta entre **Proyectos** y **Tareas**, asegurando la integridad referencial y permitiendo la eliminación en cascada.
-
-- **Lógica `@Transient`:**  
-  El cálculo del `totalHoras` de un proyecto se realiza de forma dinámica mediante flujos de datos (**Streams API**), evitando la redundancia de datos en la base de datos física.
-
-### Gestión de Migraciones con Flyway
-
-El esquema de base de datos se gestiona mediante control de versiones (**Flyway**), asegurando que las tablas de proyectos y tareas se creen de forma idéntica en cualquier entorno.
+*   **Repository Pattern (Patrón Repositorio):** Abstracción de persistencia de datos mediante **Spring Data JPA** e **Hibernate** sobre **PostgreSQL**.
+*   **Cómputo Dinámico de Horas (`@Transient`):** El cálculo de `totalHoras` acumulado por proyecto se realiza en tiempo de ejecución (mediante streams de Java) sumando las horas de todas sus tareas, garantizando consistencia y evitando duplicación en tablas.
+*   **Upsert en Asignaciones:** La lógica de negocio del servicio de asignaciones detecta si un empleado ya está asignado a un proyecto. En caso afirmativo, actualiza las horas acumuladas en lugar de crear un registro duplicado.
+*   **Control de Versiones de Base de Datos (Flyway):** Todas las migraciones del esquema se ejecutan al iniciar, cargando datos de prueba iniciales (proyectos: "Migración AWS", "Rediseño UX/UI", y sus respectivas tareas/asignaciones).
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-- **Backend:** Java 21 (Eclipse Temurin JRE optimizado para Alpine Linux)
-- **Framework:** Spring Boot 3.x con validación de datos (Jakarta Validation)
-- **Persistencia:** Hibernate en modo `validate` sobre PostgreSQL
-- **Base de Datos:** PostgreSQL 15-alpine
-- **Orquestación:** Docker Compose para garantizar paridad de entornos
+*   **Lenguaje:** Java 21 (Eclipse Temurin JRE)
+*   **Framework:** Spring Boot 3.x (Jakarta Validation para DTOs)
+*   **Base de Datos:** PostgreSQL 15-alpine (Administrada por Flyway)
+*   **Persistencia:** JPA / Hibernate (Modo `validate` en producción/docker)
+*   **Orquestación:** Docker Compose
 
 ---
 
@@ -41,50 +31,92 @@ El esquema de base de datos se gestiona mediante control de versiones (**Flyway*
 
 ### 📋 Prerrequisitos
 
-- Docker Desktop / Docker Engine
-- Puertos **8082** (API) y **5433** (Mapeo DB) disponibles en el host
+*   Docker Desktop / Docker Engine
+*   Para ejecutar localmente (fuera de Docker):
+    *   PostgreSQL corriendo en el puerto **5432** con base de datos `db_proyectos`, usuario `postgres` y contraseña `admin123`.
+
+### 🐳 Ejecución con Docker
+
+El microservicio incluye su propio `docker-compose.yml` que levanta la base de datos PostgreSQL aislada y la aplicación API.
+
+1. En la raíz del directorio `fs3_ms_proyectos`, ejecute:
+   ```bash
+   # Limpiar volúmenes y reiniciar
+   docker compose down -v
+   
+   # Levantar la base de datos y la API
+   docker compose up -d --build
+   ```
+2. **Puertos expuestos:**
+   *   **API:** Puerto **`8082`** en el host.
+   *   **Base de Datos (PostgreSQL):** Puerto **`5433`** en el host (mapeado internamente a 5432 en el contenedor para evitar conflictos).
+
+### 💻 Ejecución Local (Desarrollo)
+
+Para ejecutar el servicio localmente sin Docker:
+```bash
+# Windows
+.\mvnw.cmd spring-boot:run
+
+# Linux / macOS
+./mvnw spring-boot:run
+```
+*Nota: Si ejecuta localmente fuera de Docker, asegúrese de ajustar las propiedades de conexión de la base de datos en `src/main/resources/application.properties` (apuntando a `localhost:5432` en lugar de `innovatech-db-proyectos:5432`).*
 
 ---
 
-### ⚡ Arranque del Entorno
+## 🧪 Ejecución de Pruebas Unitarias
 
-Para realizar un despliegue limpio y ejecutar las migraciones iniciales, ejecute:
+El proyecto está configurado con pruebas unitarias que validan la lógica de negocio de proyectos, tareas y asignaciones. La cobertura de Jacoco está en el rango de **60% a 75%**.
+
+Para ejecutar los tests, el entorno utiliza una base de datos en memoria **H2**, por lo que **no** requiere una base de datos física levantada:
 
 ```bash
-docker compose down -v
-docker compose up -d --build
+# En Windows (CMD o PowerShell)
+.\mvnw.cmd test
+
+# En Linux o macOS
+./mvnw test
 ```
 
-## 🗄️ Inicialización de Datos
+Para generar el reporte de cobertura de Jacoco:
+```bash
+# Windows
+.\mvnw.cmd clean verify
 
-Al iniciar, el sistema ejecuta automáticamente los scripts de **Flyway** para cargar datos de prueba:
-
-- **Proyectos iniciales:** "Migración AWS" y "Rediseño UX/UI"
-- **Tareas iniciales:** Configuración de VPC y migración de base de datos
-
----
-
-## 🧪 Documentación del API (Puerto 8082)
-
-### 1. Gestión de Proyectos
-
-- **Listar todos:** `GET /api/proyectos`
-- **Detalle con cálculo de horas:** `GET /api/proyectos/{id}/detalle`  
-  *(Devuelve el objeto con la suma de horas de sus tareas)*
-- **Crear proyecto:** `POST /api/proyectos`
-
-### 2. Gestión de Tareas
-
-- **Listar por proyecto:** `GET /api/proyectos/{proyectoId}/tareas`
-- **Asignar nueva tarea:** `POST /api/proyectos/{proyectoId}/tareas`
+# Linux / macOS
+./mvnw clean verify
+```
+El reporte se generará en: `target/site/jacoco/index.html`.
 
 ---
 
-## 🛡️ Estándares de Seguridad y Resiliencia
+## 🔌 Documentación del API (Puerto 8082)
 
-- **Privilegio Mínimo:** Ejecución bajo el usuario `spring` en el contenedor para mitigar riesgos de seguridad
-- **Resiliencia de Persistencia:** Volumen independiente `proyectos_data` para garantizar la durabilidad de la información
-- **Aislamiento de Red:** Operación aislada en `proyectos-network`, protegiendo la infraestructura de accesos externos no autorizados
+### 1. Proyectos (`/api/proyectos`)
+| Método | Endpoint | Payload (Request Body) | Descripción | Código de Éxito |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/proyectos` | Ninguno | Obtiene todos los proyectos básicos. | `200 OK` |
+| `GET` | `/api/proyectos/{id}/detalle` | Ninguno | Obtiene el proyecto incluyendo la suma de horas de sus tareas. | `200 OK` |
+| `POST` | `/api/proyectos` | `Proyecto` (JSON) | Registra un nuevo proyecto. | `201 Created` |
+| `PUT` | `/api/proyectos/{id}` | `Proyecto` (JSON) | Actualiza datos de un proyecto. | `200 OK` |
+| `DELETE` | `/api/proyectos/{id}` | Ninguno | Elimina un proyecto (eliminación en cascada). | `204 No Content` |
+
+### 2. Tareas (`/api/proyectos/{proyectoId}/tareas`)
+| Método | Endpoint | Payload (Request Body) | Descripción | Código de Éxito |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/proyectos/{proyectoId}/tareas` | Ninguno | Lista todas las tareas asociadas a un proyecto. | `200 OK` |
+| `POST` | `/api/proyectos/{proyectoId}/tareas` | `Tarea` (JSON) | Registra una nueva tarea dentro de un proyecto. | `201 Created` |
+
+### 3. Asignaciones (`/api/proyectos/asignaciones`)
+| Método | Endpoint | Payload (Request Body) | Descripción | Código de Éxito |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/proyectos/asignaciones/proyecto/{proyectoId}` | Ninguno | Obtiene todas las asignaciones asociadas a un proyecto. | `200 OK` |
+| `GET` | `/api/proyectos/asignaciones/empleado/{empleadoId}` | Ninguno | Obtiene todas las asignaciones asignadas a un empleado. | `200 OK` |
+| `POST` | `/api/proyectos/asignaciones` | `Asignacion` (JSON) | Crea una asignación. Si ya existe, actualiza las horas (Upsert). | `201 Created` |
+| `PUT` | `/api/proyectos/asignaciones/{id}` | `Asignacion` (JSON) | Modifica las horas de una asignación por ID. | `200 OK` |
+| `DELETE` | `/api/proyectos/asignaciones/{id}` | Ninguno | Elimina una asignación por ID. | `204 No Content` |
+| `DELETE` | `/api/proyectos/asignaciones/proyecto/{proyectoId}/empleado/{empleadoId}` | Ninguno | Elimina la asignación de un empleado en un proyecto. | `204 No Content` |
 
 ---
 
